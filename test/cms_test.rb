@@ -44,15 +44,17 @@ class CMSTest < Minitest::Test
     follow_redirect!
     
     assert_equal 200, last_response.status
-    assert(
-      last_response.body.include?("no_file.txt does not exist."),
-      "Page should display a warning that the file does not exist."
-    )
+    assert_includes(last_response.body, "no_file.txt does not exist.")
     
     get "/files"
-    assert(
-      !(last_response.body.include? "no_file.txt does not exist."),
-      "'File does not exist' warning should disappear after reload."
-    )
+    refute_includes(last_response.body, "no_file.txt does not exist.")
+  end
+  
+  def test_viewing_markdown_document
+    get "/mark.md"
+    
+    assert_equal 200, last_response.status
+    assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
+    assert_includes(last_response.body, "<h1>This is big!</h1>")
   end
 end
