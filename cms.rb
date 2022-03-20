@@ -42,7 +42,7 @@ def valid_file?(pathname)
 end
 
 def file_does_not_exist_redirect(filename)
-  session[:error] = "#{filename} does not exist."
+  session[:message] = "#{filename} does not exist."
   redirect "/files"
 end
 
@@ -51,4 +51,21 @@ get "/:file" do
   file_does_not_exist_redirect(params[:file]) unless valid_file? file_path
   
   load_file_content(file_path)
+end
+
+get "/:file/edit" do
+  @filename = params[:file]
+  file_path = root + "/data/" + @filename
+  
+  @content = load_file_content(file_path)
+  headers["Content-Type"] = "text/html;charset=utf-8"
+  erb :edit
+end
+
+post "/:file" do
+  filename = params[:file]
+  file_path = root + "/data/" + filename
+  File.write(file_path, params[:content])
+  session[:message] = "#{filename} has been updated."
+  redirect "/files"
 end

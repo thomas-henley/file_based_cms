@@ -1,9 +1,12 @@
-<% if session[:error] %>
-  <p><%= session.delete(:error) %></p>
+<% if session[:message] %>
+  <p><%= session.delete(:message) %></p>
 <% end %>
 
 <ul>
   <% @files.each do |filename| %>
-    <li><a href="/<%= filename %>"><%= filename %></a></li>
+    <li>
+      <a href="/<%= filename %>"><%= filename %></a>
+      <a href="<%= filename %>/edit">Edit</a>
+    </li>
   <% end %>
 </ul>
