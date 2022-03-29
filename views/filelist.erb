@@ -1,12 +1,12 @@
-<% if session[:message] %>
-  <p><%= session.delete(:message) %></p>
-<% end %>
-
 <ul>
   <% @files.each do |filename| %>
     <li>
       <a href="/<%= filename %>"><%= filename %></a>
       <a href="<%= filename %>/edit">Edit</a>
+      <form class="inline" action="/<%= filename %>/delete" method="post">
+        <input type="submit" value="Delete" />
+      </form>
     </li>
   <% end %>
 </ul>
+<a href="/new">New Document</a>

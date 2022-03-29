@@ -3,7 +3,13 @@ require "sinatra/reloader" if development?
 require "tilt/erubis"
 require "redcarpet"
 
-root = File.expand_path("..", __FILE__)
+def data_path
+  if ENV["RACK_ENV"] == "test"
+    File.expand_path("../test/data", __FILE__)
+  else
+    File.expand_path("../data", __FILE__)
+  end
+end
 
 configure do
   enable :sessions
@@ -31,10 +37,29 @@ get "/" do
 end
 
 get "/files" do
-  @files = Dir.glob(root + "/data/*").map do |path|
+  pattern = File.join(data_path, "*")
+  @files = Dir.glob(pattern).map do |path|
     File.basename(path)
   end
   erb :filelist
+end
+
+get "/new" do
+  erb :new
+end
+
+post "/files" do
+  filename = params[:new_file_name]
+  if filename.empty?
+    session[:message] = "Filename cannot be blank."
+    status 422
+    erb :new
+  else
+    file_path = File.join(data_path, filename)
+    File.new(file_path, "w")
+    session[:message] = "#{filename} was created."
+    redirect "/files"
+  end
 end
 
 def valid_file?(pathname)
@@ -47,7 +72,7 @@ def file_does_not_exist_redirect(filename)
 end
 
 get "/:file" do
-  file_path = root + "/data/" + params[:file]
+  file_path = File.join(data_path, params[:file])
   file_does_not_exist_redirect(params[:file]) unless valid_file? file_path
   
   load_file_content(file_path)
@@ -55,7 +80,7 @@ end
 
 get "/:file/edit" do
   @filename = params[:file]
-  file_path = root + "/data/" + @filename
+  file_path = File.join(data_path, @filename)
   
   @content = load_file_content(file_path)
   headers["Content-Type"] = "text/html;charset=utf-8"
@@ -64,8 +89,16 @@ end
 
 post "/:file" do
   filename = params[:file]
-  file_path = root + "/data/" + filename
+  file_path = File.join(data_path, filename)
   File.write(file_path, params[:content])
   session[:message] = "#{filename} has been updated."
+  redirect "/files"
+end
+
+post "/:file/delete" do
+  filename = params[:file]
+  file_path = File.join(data_path, filename)
+  File.delete(file_path)
+  session[:message] = "#{filename} was deleted."
   redirect "/files"
 end
