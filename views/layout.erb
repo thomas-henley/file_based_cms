@@ -12,5 +12,16 @@
   <% end %>
 
   <%= yield %>
+  
+  <footer>
+    <% if session[:user] %>
+      <p>
+        Signed in as <%= session[:user] %>
+        <form class="inline" action="/users/signout" method="post">
+          <input type="submit" value="signout" />
+        </form>
+      </p>
+    <% end %>
+  </footer>
 </body>
 </html>
