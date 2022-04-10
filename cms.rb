@@ -102,3 +102,7 @@ post "/:file/delete" do
   session[:message] = "#{filename} was deleted."
   redirect "/files"
 end
+
+get "/users/signin" do
+  erb :signin
+end

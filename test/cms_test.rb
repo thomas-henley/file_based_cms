@@ -163,4 +163,23 @@ class CMSTest < Minitest::Test
     assert_includes last_response.body, "leave_me.txt</a>"
     refute_includes last_response.body, "delete_me.txt</a>"
   end
+  
+  def test_root_shows_sign_in_button
+    get "/files"
+    
+    assert_equal 200, last_response.status
+    
+    assert_includes last_response.body, "action=\"/users/signin\""
+    assert_includes last_response.body, "value=\"Sign In\""
+  end
+  
+  def test_get_sign_in
+    get "/users/signin"
+    
+    assert_equal 200, last_response.status
+    
+    assert_includes last_response.body, "Username:"
+    assert_includes last_response.body, "Password:"
+    assert_includes last_response.body, "action=\"/users/signin\" method=\"post\""
+  end
 end
