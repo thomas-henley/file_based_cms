@@ -2,12 +2,29 @@ require "sinatra"
 require "sinatra/reloader" if development?
 require "tilt/erubis"
 require "redcarpet"
+require "yaml"
 
 def data_path
   if ENV["RACK_ENV"] == "test"
     File.expand_path("../test/data", __FILE__)
   else
     File.expand_path("../data", __FILE__)
+  end
+end
+
+def users_path
+  if ENV["RACK_ENV"] == "test"
+    File.expand_path("../test/users.yml", __FILE__)
+  else
+    File.expand_path("../admin/users.yml", __FILE__)
+  end
+end
+
+def valid_signin?(username, password)
+  if ENV["RACK_ENV"] == "test"
+    YAML.load(File.read(users_path))[username] == password
+  else
+    YAML.load(File.read(users_path))[username] == password
   end
 end
 
@@ -30,7 +47,17 @@ def load_file_content(path)
     content
   end
 end
-    
+
+def signed_in?
+  session.key?(:user)
+end
+
+def redirect_unless_signed_in
+  return if signed_in?
+  
+  session[:message] = "You must be signed in to do that."
+  redirect "/files"
+end
 
 get "/" do
   redirect "/files"
@@ -49,6 +76,8 @@ get "/new" do
 end
 
 post "/files" do
+  redirect_unless_signed_in
+  
   filename = params[:new_file_name]
   if filename.empty?
     session[:message] = "Filename cannot be blank."
@@ -79,6 +108,8 @@ get "/:file" do
 end
 
 get "/:file/edit" do
+  redirect_unless_signed_in
+  
   @filename = params[:file]
   file_path = File.join(data_path, @filename)
   
@@ -88,6 +119,8 @@ get "/:file/edit" do
 end
 
 post "/:file" do
+  redirect_unless_signed_in
+  
   filename = params[:file]
   file_path = File.join(data_path, filename)
   File.write(file_path, params[:content])
@@ -96,6 +129,8 @@ post "/:file" do
 end
 
 post "/:file/delete" do
+  redirect_unless_signed_in
+  
   filename = params[:file]
   file_path = File.join(data_path, filename)
   File.delete(file_path)
@@ -108,7 +143,7 @@ get "/users/signin" do
 end
 
 post "/users/signin" do
-  if params[:username] == "admin" && params[:password] == "secret"
+  if valid_signin?(params[:username], params[:password])
     session[:message] = "Welcome!"
     session[:user] = params[:username]
     redirect "/files"
