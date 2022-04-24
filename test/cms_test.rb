@@ -26,7 +26,11 @@ class CMSTest < Minitest::Test
       file.write(content)
     end
   end
-  
+
+  def session
+    last_request.env["rack.session"]
+  end
+
   def test_get_root
     create_document("about.md")
     create_document("changes.txt")
@@ -85,6 +89,7 @@ class CMSTest < Minitest::Test
     
     assert_equal 302, last_response.status
     assert_equal "files", last_response["location"].split("/").last
+    assert_equal "no_file.txt does not exist.", session[:message]
     
     follow_redirect!
     
@@ -109,10 +114,9 @@ class CMSTest < Minitest::Test
     post "/history.txt", content: "new content"
 
     assert_equal 302, last_response.status
+    assert_equal "history.txt has been updated.", session[:message]
 
     get last_response["Location"]
-
-    assert_includes(last_response.body, "history.txt has been updated")
 
     get "/history.txt"
     assert_equal 200, last_response.status
@@ -132,10 +136,9 @@ class CMSTest < Minitest::Test
     post "/files", new_file_name: "new_file_test.txt"
     
     assert_equal 302, last_response.status
+    assert_equal "new_file_test.txt was created.", session[:message]
     
     get last_response["Location"]
-    
-    assert_includes last_response.body, "new_file_test.txt was created."
     assert_includes last_response.body, ">new_file_test.txt</a>"
   end
   
@@ -156,10 +159,10 @@ class CMSTest < Minitest::Test
     post "/delete_me.txt/delete"
     
     assert_equal 302, last_response.status
+    assert_equal "delete_me.txt was deleted.", session[:message]
     
     get last_response["Location"]
     
-    assert_includes last_response.body, "delete_me.txt was deleted."
     assert_includes last_response.body, "leave_me.txt</a>"
     refute_includes last_response.body, "delete_me.txt</a>"
   end
@@ -186,15 +189,17 @@ class CMSTest < Minitest::Test
   def test_signin
     post "/users/signin", username: "admin", password: "secret"
     assert_equal 302, last_response.status
+    assert_equal "admin", session[:user]
+    assert_equal "Welcome!", session[:message]
     
     get last_response["Location"]
-    assert_includes last_response.body, "Welcome"
     assert_includes last_response.body, "Signed in as admin"
   end
   
   def test_signin_with_bad_credentials
     post "/users/signin", username: "guest", password: "shhhh"
     assert_equal 422, last_response.status
+    assert_nil session[:user]
     assert_includes last_response.body, "Invalid credentials"
   end
   
@@ -205,9 +210,10 @@ class CMSTest < Minitest::Test
     refute_includes last_response.body, "Sign In"
 
     post "/users/signout"
+    assert_equal "You have been signed out.", session[:message]
     get last_response["Location"]
     
-    assert_includes last_response.body, "You have been signed out"
+    assert_nil session[:user]
     assert_includes last_response.body, "Sign In"
   end
 end
