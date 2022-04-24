@@ -6,6 +6,7 @@ ruby "2.7.5"
 gem "sinatra"
 gem "sinatra-contrib"
 gem "erubis"
+gem "bcrypt"
 
 # testing
 gem "rack-test"

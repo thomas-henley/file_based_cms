@@ -1,3 +1,4 @@
+require "bcrypt"
 require "sinatra"
 require "sinatra/reloader" if development?
 require "tilt/erubis"
@@ -21,10 +22,12 @@ def users_path
 end
 
 def valid_signin?(username, password)
-  if ENV["RACK_ENV"] == "test"
-    YAML.load(File.read(users_path))[username] == password
+  credentials = YAML.load(File.read(users_path))[username]
+  if credentials
+    stored_password = BCrypt::Password.new(credentials)
+    stored_password == password
   else
-    YAML.load(File.read(users_path))[username] == password
+    false
   end
 end
 
